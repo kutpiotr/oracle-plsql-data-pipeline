@@ -4,3 +4,4 @@
 @packages/etl_pkg_spec.sql
 @packages/etl_pkg_body.sql
 @sql/inserts.sql
+@sql/views.sql
