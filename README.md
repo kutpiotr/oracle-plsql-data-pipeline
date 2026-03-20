@@ -2,144 +2,143 @@
 
 ##  Cel projektu
 
-Projekt przedstawia implementację prostego pipeline'u ETL w bazie danych Oracle z wykorzystaniem PL/SQL.
+Projekt przedstawia implementację pipeline'u ETL w bazie danych Oracle z wykorzystaniem PL/SQL.
 
 Celem projektu jest przetwarzanie surowych danych sprzedażowych, ich walidacja, oczyszczanie oraz przygotowanie do analizy poprzez zapis do tabeli docelowej.
-
-Projekt pokazuje:
-
-* programowanie w Oracle PL/SQL,
-* projektowanie schematu bazy danych,
-* przetwarzanie danych (ETL),
-* walidację danych,
-* logowanie błędów i przebiegu procesu,
-* przygotowanie środowiska pod testowanie i automatyzację.
 
 ---
 
 ##  Architektura rozwiązania
-
-Pipeline składa się z kilku warstw przetwarzania danych:
-
+```
 RAW → STAGING → CLEAN
-↓
-ERROR LOG
+        ↓
+    ERROR LOG
+```
+### Diagram
 
-### Opis warstw:
+![Architecture](docs/architecture.png)
+
+## Przykładowe wyniki
+
+### Log uruchomienia ETL
+![ETL Log](docs/etl_log.png)
+
+### Dane poprawne (clean_sales)
+![Clean Sales](docs/clean_sales.png)
+
+### Błędy danych (etl_error_log)
+
+![Error Log](docs/etl_error_log.png)
+
+### Raport sprzedaży (vw_sales_by_day)
+
+![Sales](docs/vw_sales_by_day.png)
+---
+
+### Warstwy:
 
 * RAW (`raw_sales`)
-  Surowe dane wejściowe (np. z API lub pliku CSV).
-  Dane mogą być niepoprawne lub niekompletne.
+  Surowe dane wejściowe (mogą zawierać błędy)
 
 * STAGING (`stg_sales`)
-  Warstwa pośrednia, w której dane są przygotowywane do walidacji.
-  Każdy rekord posiada status:
+  Dane pośrednie z nadanym statusem:
 
   * NEW
   * VALID
   * INVALID
 
 * CLEAN (`clean_sales`)
-  Tabela docelowa zawierająca tylko poprawne dane.
+  Dane oczyszczone i gotowe do raportowania
 
 * ERROR LOG (`etl_error_log`)
-  Tabela przechowująca błędne rekordy wraz z opisem błędu.
+  Błędy walidacji
 
 * ETL LOG (`etl_log`)
-  Log przebiegu procesu ETL (start, koniec, status, liczba rekordów).
-
----
-
-##  Model danych
-
-Projekt zawiera następujące główne tabele:
-
-* raw_sales — dane wejściowe
-* stg_sales — dane pośrednie
-* clean_sales — dane docelowe
-* etl_log — log procesu ETL
-* etl_error_log — log błędów
-
-Dodatkowo:
-
-* sekwencje (SEQUENCE) do generowania ID
-* triggery (TRIGGER) do automatycznego nadawania kluczy głównych
-
+  Historia uruchomień pipeline
 
 
 ---
 
 ##  Uruchomienie projektu
 
-Projekt można uruchomić w Oracle SQL Developer.
-
-### Krok 1 — połączenie z bazą
-
-Utwórz połączenie do bazy Oracle (np. pipeline_user).
-
-### Krok 2 — uruchomienie skryptów
-
-Najprostszy sposób:
-
+Projekt należy uruchomić w Oracle SQL Developer lub SQL Plus.
+```sql
 @sql/run_all.sql
-
-Lub ręcznie:
 ```
-@sql/tables.sql
-@sql/sequences.sql
-@sql/triggers.sql
-@packages/etl_pkg_spec.sql
-@packages/etl_pkg_body.sql
-@sql/inserts.sql
-@sql/views.sql
-@sql/scheduler.sql
-```
----
-
-##  Dane testowe
-
-Projekt zawiera przykładowe dane w tabeli raw_sales, które obejmują:
-
-###  Poprawne rekordy
-
-* kompletne dane sprzedażowe
-
-###  Błędne rekordy
-
-* brak nazwy produktu
-* brak ilości
-* cena ujemna
-* ilość równa 0
-* brak daty sprzedaży
-
-###  Przypadki graniczne
-
-* duplikaty
-* wartości skrajne
 
 ---
 
-##  Logika przetwarzania (ETL)
+##  Proces ETL
 
-Pipeline będzie realizował następujące kroki:
+Pipeline realizuje następujące kroki:
 
-1. Załadunek danych z raw_sales do stg_sales
+1. Załadunek danych do STAGING
 2. Walidacja danych
-3. Oznaczenie rekordów jako VALID lub INVALID
-4. Zapis błędów do etl_error_log
-5. Przeniesienie poprawnych danych do clean_sales
-6. Logowanie procesu w etl_log
+3. Oznaczenie rekordów (VALID / INVALID)
+4. Logowanie błędów
+5. Ładowanie danych do CLEAN
+6. Logowanie procesu
 
 ---
 
 ##  Reguły walidacji
 
-Rekord uznawany jest za poprawny, jeśli:
+Rekord jest poprawny, jeśli:
 
 * product_name IS NOT NULL
 * quantity IS NOT NULL AND quantity > 0
 * price IS NOT NULL AND price > 0
 * sale_date IS NOT NULL
+
+---
+
+## Testowanie
+
+Projekt zawiera skrypt testowy:
+
+`tests/test_etl.sql`
+
+Testy sprawdzają:
+
+* liczbę poprawnych rekordów
+* liczbę błędów
+* statusy w staging
+* log wykonania ETL
+
+Uruchom:
+
+```sql
+@tests/test_etl.sql
+```
+
+---
+
+##  Widoki raportowe
+
+* vw_sales_by_day
+* vw_sales_by_product
+* vw_etl_error_summary
+* vw_etl_run_summary
+
+---
+
+##  Automatyzacja
+
+Projekt wykorzystuje DBMS_SCHEDULER do uruchamiania pipeline automatycznie:
+
+* job: ETL_PIPELINE_JOB
+* harmonogram: codziennie
+
+---
+
+##  Jak uruchomić pipeline ręcznie
+
+```sql
+BEGIN
+    etl_pkg.run_full_pipeline;
+END;
+/
+```
 
 ---
 
@@ -149,15 +148,8 @@ Rekord uznawany jest za poprawny, jeśli:
 * PL/SQL
 * SQL
 * Oracle SQL Developer
----
 
-## Testowanie
-Projekt zawiera skrypt testowy `tests/test_etl.sql`, który uruchamia pełny pipeline ETL i weryfikuje:
 
-* liczbę poprawnych rekordów
-
-* liczbę błędnych rekordów
-
-* statusy w warstwie staging
-
-* log wykonania procesu
+## Autor 
+Piotr Kut 
+Student kierunku Inżynieria i Analiza Danych.
