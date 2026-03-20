@@ -5,3 +5,4 @@
 @packages/etl_pkg_body.sql
 @sql/inserts.sql
 @sql/views.sql
+@sql/scheduler.sql

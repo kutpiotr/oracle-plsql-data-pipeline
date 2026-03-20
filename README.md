@@ -69,7 +69,7 @@ Dodatkowo:
 
 ---
 
-## ▶ Uruchomienie projektu
+##  Uruchomienie projektu
 
 Projekt można uruchomić w Oracle SQL Developer.
 
@@ -84,12 +84,16 @@ Najprostszy sposób:
 @sql/run_all.sql
 
 Lub ręcznie:
-
+```
 @sql/tables.sql
 @sql/sequences.sql
 @sql/triggers.sql
+@packages/etl_pkg_spec.sql
+@packages/etl_pkg_body.sql
 @sql/inserts.sql
-
+@sql/views.sql
+@sql/scheduler.sql
+```
 ---
 
 ##  Dane testowe
@@ -139,29 +143,21 @@ Rekord uznawany jest za poprawny, jeśli:
 
 ---
 
-##  Status projektu
-
-Zrealizowane etapy:
-
-* ✔ Projekt koncepcji i architektury
-* ✔ Model danych
-* ✔ Implementacja tabel
-* ✔ Sekwencje i triggery
-* ✔ Dane testowe
-* ✔ Projekt logiki ETL
-
-W kolejnych etapach:
-
-* implementacja pakietu PL/SQL (etl_pkg)
-* testy
-* automatyzacja (scheduler)
-* dokumentacja i diagramy
-
----
-
 ##  Technologie
 
 * Oracle Database
 * PL/SQL
 * SQL
 * Oracle SQL Developer
+---
+
+## Testowanie
+Projekt zawiera skrypt testowy `tests/test_etl.sql`, który uruchamia pełny pipeline ETL i weryfikuje:
+
+* liczbę poprawnych rekordów
+
+* liczbę błędnych rekordów
+
+* statusy w warstwie staging
+
+* log wykonania procesu
